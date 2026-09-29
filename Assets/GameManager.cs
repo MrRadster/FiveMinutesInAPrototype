@@ -1,15 +1,15 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // if you use TextMeshPro
+using TMPro; 
 
 public class GameManager : MonoBehaviour
 {
     [Header("Night Settings")]
-    public float nightDurationInMinutes = 6f; // real minutes for the whole night
-    public TextMeshProUGUI timeText;          // optional UI text
+    public float nightDurationInMinutes = 6f; 
+    public TextMeshProUGUI timeText;          
 
     private float timer;
-    private int currentHour = 12; // starts at 12 AM
+    private int currentHour = 12; 
 
     void Start()
     {
@@ -21,9 +21,8 @@ public class GameManager : MonoBehaviour
     {
         timer += Time.deltaTime;
 
-        // Calculate which hour we are in
         float totalNightSeconds = nightDurationInMinutes * 60f;
-        float hourDuration = totalNightSeconds / 6f; // 12, 1, 2, 3, 4, 5, 6AM
+        float hourDuration = totalNightSeconds / 6f; 
 
         int newHour = Mathf.FloorToInt(timer / hourDuration);
 
@@ -34,11 +33,9 @@ public class GameManager : MonoBehaviour
             UpdateTimeUI();
         }
 
-        // 6 AM Win
         if (timer >= totalNightSeconds)
         {
             Debug.Log("6 AM! You survived!");
-            // Later: load win screen
             enabled = false;
         }
     }
