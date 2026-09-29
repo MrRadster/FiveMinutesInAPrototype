@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CameraManager : MonoBehaviour
 {
@@ -8,6 +9,13 @@ public class CameraManager : MonoBehaviour
 
     [Header("UI")]
     public GameObject cameraUI;
+    public RawImage cameraStaticOverlay; // Drag your UI RawImage here for static
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip cameraToggleSFX;  
+    [SerializeField] private AudioClip cameraSwitchSFX;  
+    [SerializeField] private AudioClip staticHumSFX;      // Continuous camera static hum
 
     [Header("Red (Stare Animatronic)")]
     public Animatronic redAnimatronic;
@@ -17,9 +25,13 @@ public class CameraManager : MonoBehaviour
 
     private int currentCamIndex = -1;
     private bool isOnCameras = false;
+    private float staticTimer = 0f;
 
     void Start()
     {
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+
         CloseCameras();
     }
 
@@ -33,6 +45,15 @@ public class CameraManager : MonoBehaviour
                 OpenCameras();
         }
 
+        // Animate the static texture UV coordinates for flickering noise movement
+        if (isOnCameras && cameraStaticOverlay != null)
+        {
+            Rect currentUV = cameraStaticOverlay.uvRect;
+            currentUV.x += Random.Range(-0.1f, 0.1f);
+            currentUV.y += Random.Range(-0.1f, 0.1f);
+            cameraStaticOverlay.uvRect = currentUV;
+        }
+
         UpdateRedWatchStatus();
     }
 
@@ -42,13 +63,24 @@ public class CameraManager : MonoBehaviour
         officeCamera.enabled = false;
         cameraUI.SetActive(true);
 
+        if (cameraStaticOverlay != null)
+            cameraStaticOverlay.gameObject.SetActive(true);
+
+        PlaySound(cameraToggleSFX);
+
         SwitchCamera(0);
     }
 
     public void CloseCameras()
     {
+        if (isOnCameras)
+            PlaySound(cameraToggleSFX);
+
         isOnCameras = false;
         cameraUI.SetActive(false);
+
+        if (cameraStaticOverlay != null)
+            cameraStaticOverlay.gameObject.SetActive(false);
 
         foreach (Camera cam in securityCameras)
         {
@@ -67,6 +99,11 @@ public class CameraManager : MonoBehaviour
         if (!isOnCameras) return;
         if (index < 0 || index >= securityCameras.Length) return;
 
+        if (currentCamIndex != index)
+        {
+            PlaySound(cameraSwitchSFX);
+        }
+
         if (currentCamIndex >= 0)
         {
             securityCameras[currentCamIndex].enabled = false;
@@ -78,10 +115,17 @@ public class CameraManager : MonoBehaviour
         UpdateRedWatchStatus();
     }
 
+    private void PlaySound(AudioClip clip)
+    {
+        if (audioSource != null && clip != null)
+        {
+            audioSource.PlayOneShot(clip);
+        }
+    }
+
     void UpdateRedWatchStatus()
     {
-        if (redAnimatronic == null)
-            return;
+        if (redAnimatronic == null) return;
 
         if (!isOnCameras)
         {
@@ -95,17 +139,10 @@ public class CameraManager : MonoBehaviour
         if (redVisibleOnCamera != null && redStage >= 0 && redStage < redVisibleOnCamera.Length)
         {
             int requiredCamera = redVisibleOnCamera[redStage];
-
             if (currentCamIndex == requiredCamera)
             {
                 canSeeRed = true;
             }
-
-            Debug.Log($"Red Stage: {redStage} | Current Cam: {currentCamIndex} | Needs Cam: {requiredCamera} | Watching: {canSeeRed}");
-        }
-        else
-        {
-            Debug.LogWarning($"Red stage {redStage} is outside the Red Visible On Camera array!");
         }
 
         redAnimatronic.SetBeingWatched(canSeeRed);

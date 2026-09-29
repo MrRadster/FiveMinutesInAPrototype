@@ -18,6 +18,7 @@ public class Animatronic : MonoBehaviour
     [Header("Door Blocking")]
     public FNAFDoor blockingDoor;
     public float doorBlockSendBackTime = 2.5f;   
+    
     [Header("Attack")]
     public float attackGraceTime = 2.5f;         
     public GameObject jumpscareObject;
@@ -32,9 +33,15 @@ public class Animatronic : MonoBehaviour
     private bool hasAttacked = false;
     private bool isInAttackStage = false;
 
+    // Static flag shared across ALL animatronics so only ONE jumpscare sound plays per death
+    private static bool globalJumpscarePlayed = false;
+
     void Start()
     {
         moveTimer = moveInterval;
+
+        // Reset the global flag when the scene starts/reloads
+        globalJumpscarePlayed = false;
 
         if (path != null && path.Length > 0)
         {
@@ -148,17 +155,29 @@ public class Animatronic : MonoBehaviour
 
     void Attack()
     {
+        // 1. Guard against local re-triggering on this instance
         if (hasAttacked) return;
         hasAttacked = true;
 
         Debug.Log(animatronicName + " is attacking!");
 
-        if (jumpscareSound != null)
-            jumpscareSound.Play();
+        // 2. Play the jumpscare audio strictly ONCE (even if multiple animatronics reach attack stage together)
+        if (!globalJumpscarePlayed)
+        {
+            globalJumpscarePlayed = true;
 
+            if (jumpscareSound != null)
+            {
+                // PlayOneShot guarantees clean single execution
+                jumpscareSound.PlayOneShot(jumpscareSound.clip);
+            }
+        }
+
+        // Activate visual jumpscare object
         if (jumpscareObject != null)
             jumpscareObject.SetActive(true);
 
+        // Notify Game Over Manager
         GameOverManager gameOver = FindObjectOfType<GameOverManager>();
         if (gameOver != null)
             gameOver.ShowGameOver();

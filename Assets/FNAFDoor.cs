@@ -6,18 +6,26 @@ public class FNAFDoor : MonoBehaviour
     public float openSpeed = 4f;
     public float openHeight = 2.6f;
 
+    [Header("Audio Settings")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip doorCloseSFX;
+    [SerializeField] private AudioClip doorOpenSFX;
+
     private Vector3 closedPos;
     private Vector3 openPos;
-    private bool isOpen = true;        // Starts open
+    private bool isOpen = true;        
     private bool isMoving = false;
 
     void Start()
     {
-        // Current position in the scene should be the OPEN position (door up)
         openPos = transform.position;
-
-        // Closed position is lower (door drops down)
         closedPos = openPos - Vector3.up * openHeight;
+
+        // Automatically grab the AudioSource if not assigned in Inspector
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+        }
     }
 
     void Update()
@@ -39,6 +47,24 @@ public class FNAFDoor : MonoBehaviour
 
         isOpen = !isOpen;
         isMoving = true;
+
+        // Play the appropriate sound effect when movement begins
+        if (isOpen)
+        {
+            PlaySound(doorOpenSFX);
+        }
+        else
+        {
+            PlaySound(doorCloseSFX);
+        }
+    }
+
+    private void PlaySound(AudioClip clip)
+    {
+        if (audioSource != null && clip != null)
+        {
+            audioSource.PlayOneShot(clip);
+        }
     }
 
     public bool IsOpen()
